@@ -6,7 +6,7 @@
 #   --metadata-from-file=startup-script=c9-google-dev.sh --zone us-central1-a \
 #   --tags http-server,https-server,debug-http-server
 
-TARGET_USER=serviceapp
+TARGET_USER=root
 TARGET_USER_HOME=/home/${TARGET_USER}
 APP_ROOT=${TARGET_USER_HOME}/apps
 WORKSPACE_ROOT=${TARGET_USER_HOME}/workspace
@@ -20,6 +20,8 @@ function RunAsUser() {
 function Initialize() {
   echo "Google API Development with Cloud9 IDE"
   echo "======================================"
+  systemctl disable accounts-daemon.service
+  systemctl stop accounts-daemon.service
   useradd -G adm,sudo,dip,video,plugdev -d ${TARGET_USER_HOME} -m ${TARGET_USER} 
   RunAsUser "mkdir -p ${APP_ROOT}; mkdir -p ${WORKSPACE_ROOT}"
   RunAsUser "touch ${WORKSPACE_ROOT}/WORKSPACE"
@@ -90,7 +92,7 @@ PIDFile=/var/run/cloud9.pid
 WorkingDirectory=${APP_ROOT}/c9sdk
 ExecStart=/usr/bin/node ${APP_ROOT}/c9sdk/server.js -w ${WORKSPACE_ROOT} \
   --port 8080 --listen 0.0.0.0 --auth user:pass
-Restart=on-abort
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
