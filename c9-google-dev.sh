@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Run Locally: sudo su -c "bash -x ./install.sh" root
 # Command
 # gcloud compute instances create c9-google-dev --boot-disk-size 100GB \
 #   --boot-disk-type pd-ssd --image ubuntu-15-04 --machine-type n1-standard-1 \
@@ -11,6 +12,7 @@ TARGET_USER_HOME=/home/${TARGET_USER}
 APP_ROOT=${TARGET_USER_HOME}/apps
 WORKSPACE_ROOT=${TARGET_USER_HOME}/workspace
 JVM_ROOT=/usr/lib/jvm/java-8-openjdk-amd64
+C9_PORT=80
 
 function RunAsUser() {
   local CWD=$(pwd)
@@ -87,11 +89,11 @@ After=syslog.target
 
 [Service]
 User=${TARGET_USER}
-Type=forking
+Type=simple
 PIDFile=/var/run/cloud9.pid
 WorkingDirectory=${APP_ROOT}/c9sdk
 ExecStart=/usr/bin/node ${APP_ROOT}/c9sdk/server.js -w ${WORKSPACE_ROOT} \
-  --port 8080 --listen 0.0.0.0 --auth user:pass
+  --port ${C9_PORT} --listen 0.0.0.0 --auth user:pass
 Restart=always
 
 [Install]
@@ -103,8 +105,17 @@ EOF
   systemctl start cloud9.service
 }
 
+function SetupSshKeys() {
+  ssh-keygen -f ${TARGET_USER_HOME}/.ssh/id_rsa -t rsa -N ''
+  eval $(ssh-agent -s)
+  ssh-add ${TARGET_USER_HOME}/.ssh/id_rsa
+  ssh-add -l
+  cat ${TARGET_USER_HOME}/.ssh/id_rsa
+}
+
 Initialize
 InstallPackages
 InstallBazel
 InstallGrpc
 InstallCloud9
+SetupSshKeys
